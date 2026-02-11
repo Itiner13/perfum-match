@@ -441,7 +441,7 @@ function calculateTotalWeights() {
 }
 
 
-function showResults() {
+async function showResults() {
   calculateTotalWeights();
 
   let maxWeight = -Infinity;
@@ -466,7 +466,6 @@ function showResults() {
     .map(([family, weight]) => `${family} ${weight}점`) // Format as "시트러스 n점"
     .join(', ');
 
-
   recommendationDisplay.innerHTML = `
     <h2>${userName}님께 추천하는 향수</h2>
     <p><strong>"THE NUDE"</strong></p>
@@ -474,8 +473,34 @@ function showResults() {
     <p>${weightsDisplay}</p>
   `;
   
-  surveyContainer.style.display = 'none';
-  resultsContainer.style.display = 'block';
+  // *** New: Save results directly to Firestore ***
+  const surveyResultData = {
+    userAnswers: userAnswers,
+    totalWeights: totalWeights,
+    userName: userName,
+    recommendation: {
+      family: recommendedFamily,
+      message: `THE NUDE` // or a more dynamic message based on recommendation
+    },
+    timestamp: window.serverTimestamp() // Use server timestamp
+  };
+
+  try {
+    // Ensure window.db and window.collection are available
+    if (window.db && window.collection && window.addDoc) {
+      const docRef = await window.addDoc(window.collection(window.db, "surveyResults"), surveyResultData);
+      console.log("Survey results saved successfully with ID:", docRef.id);
+      alert('설문 결과가 성공적으로 저장되었습니다!');
+    } else {
+      throw new Error("Firebase not initialized or available.");
+    }
+  } catch (error) {
+    console.error("Error saving survey results to Firestore:", error);
+    alert('설문 결과 저장 중 오류가 발생했습니다: ' + error.message);
+  } finally {
+    surveyContainer.style.display = 'none';
+    resultsContainer.style.display = 'block';
+  }
 }
 
 // Initialize the display and event listeners when the DOM is fully loaded
