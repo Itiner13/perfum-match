@@ -7,8 +7,23 @@
   <link href='/style.css' rel='stylesheet'>
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
+  <div id="app">
+    <div id="survey-container">
+      <h1 id="question-text"></h1>
+      <div id="options-container">
+        <!-- Options will be dynamically loaded here -->
+      </div>
+      <div id="navigation-buttons">
+        <button id="prev-button" disabled>이전</button>
+        <button id="next-button">다음</button>
+      </div>
+    </div>
+    <div id="results-container" style="display: none;">
+      <h2>당신에게 추천하는 향조:</h2>
+      <pre id="recommendation-display"></pre>
+      <button id="restart-button">다시 시작</button>
+    </div>
+  </div>
   <script defer type="text/javascript" src="/main.js"></script>
 </body>
 </html>
