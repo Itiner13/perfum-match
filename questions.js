@@ -59,4 +59,4 @@ export const surveyData = [
       hasEtc: true
     },
     { id: "painpoint", question: "기존 향수에서 가장 아쉬웠던 점은?", type: "textarea", placeholder: "약한 지속력 / 너무 흔한 향 / 독한 첫 향 / 부담스러운 가격 등" }
-  ];
+  ];22

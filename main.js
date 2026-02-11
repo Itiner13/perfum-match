@@ -17,11 +17,61 @@ let surveyContainer;
 let resultsContainer;
 let recommendationDisplay;
 let restartButton;
+let currentWeightsDisplay; // New: to display real-time weights
+
+// --- Helper Mappings for question and option texts ---
+// This maps questions.js question text to surveyData.js question text
+const questionTextMap = {
+  "당신을 가장 잘 표현하는 색은?": "[색채] 당신을 가장 잘 표현하는 색은?",
+  "당신의 내면과 가장 닮은 도형은?": "[도형] 당신의 내면과 가장 닮은 도형은?",
+  "나와 잘 어울리는 옷의 재질은?": "[질감] 나와 잘 어울리는 옷의 재질은?",
+  "당신의 마음이 가장 안정되는 배경음은?": "[소리] 당신의 마음이 가장 안정되는 소리는?",
+  "타인에게 기억되고 싶은 당신의 인상은?": "[이미지] 타인에게 남기고 싶은 당신의 인상은?"
+};
+
+// This maps questions.js option text to surveyData.js option text where they differ
+const optionTextMap = {
+  "빨강": "빨간색",
+  "노랑": "노란색",
+  "초록": "초록색",
+  "파랑": "파란색",
+  "보라": "보라색",
+  "캐시미어 니트": "캐시미어",
+  // Mappings for 'sound' question
+  "새소리": "고음", // Assuming this mapping based on general tones
+  "첼로": "저음", // Assuming this mapping based on general tones
+  "백색소음(파도)": "백색소음",
+  // Mappings for 'impression' question
+  "산뜻하고 깨끗함": "산뜻/깨끗",
+  "지적이고 차분함": "지적/차분",
+  "매혹적이고 성숙함": "매혹/성숙",
+  "다정하고 포근함": "다정/포근"
+  // Add other mappings as needed if texts differ
+};
+
+function normalizeOptionText(text) {
+  return optionTextMap[text] || text;
+}
+// --- End Helper Mappings ---
+
 
 function initializeTotalWeights() {
   perfumeFamilies.forEach(family => {
     totalWeights[family] = 0;
   });
+}
+
+function updateRealtimeWeightsDisplay() {
+  calculateTotalWeights(); // Recalculate weights based on current answers
+
+  let weightsFormatted = Object.entries(totalWeights)
+    .sort(([familyA], [familyB]) => perfumeFamilies.indexOf(familyA) - perfumeFamilies.indexOf(familyB)) // Sort by predefined order
+    .map(([family, weight]) => `${family} ${weight}점`) // Format as "시트러스 n점"
+    .join(', ');
+
+  if (currentWeightsDisplay) {
+    currentWeightsDisplay.textContent = weightsFormatted;
+  }
 }
 
 function initializeSurvey() {
@@ -33,6 +83,7 @@ function initializeSurvey() {
   surveyContainer.style.display = 'block';
   resultsContainer.style.display = 'none';
   renderQuestion();
+  updateRealtimeWeightsDisplay(); // Display initial weights (all zero)
 }
 
 function renderQuestion() {
@@ -52,7 +103,10 @@ function renderQuestion() {
       if (currentAnswer !== null) {
         textInput.value = currentAnswer;
       }
-      textInput.addEventListener('input', (event) => handleTextInput(event.target.value));
+      textInput.addEventListener('input', (event) => {
+        handleTextInput(event.target.value);
+        updateRealtimeWeightsDisplay(); // Update on input change
+      });
       optionsContainer.appendChild(textInput);
       break;
 
@@ -63,7 +117,10 @@ function renderQuestion() {
       if (currentAnswer !== null) {
         textareaInput.value = currentAnswer;
       }
-      textareaInput.addEventListener('input', (event) => handleTextInput(event.target.value));
+      textareaInput.addEventListener('input', (event) => {
+        handleTextInput(event.target.value);
+        updateRealtimeWeightsDisplay(); // Update on input change
+      });
       optionsContainer.appendChild(textareaInput);
       break;
 
@@ -89,7 +146,10 @@ function renderQuestion() {
         }
         // ... more visual/audio specific rendering logic ...
 
-        button.addEventListener('click', () => handleSelectOptionClick(option, index, currentQuestion.type === 'button-with-etc'));
+        button.addEventListener('click', () => {
+          handleSelectOptionClick(option, index, currentQuestion.type === 'button-with-etc');
+          updateRealtimeWeightsDisplay(); // Update on click
+        });
 
         // Highlight if this option was previously selected
         if (currentAnswer !== null && !currentAnswer.isEtc && currentAnswer.optionIndex === index) {
@@ -113,7 +173,10 @@ function renderQuestion() {
           etcInput.value = currentAnswer.value;
         }
 
-        etcInput.addEventListener('input', (event) => handleEtcInput(event.target.value));
+        etcInput.addEventListener('input', (event) => {
+          handleEtcInput(event.target.value);
+          updateRealtimeWeightsDisplay(); // Update on input change
+        });
         
         optionsContainer.appendChild(etcInputContainer);
         etcInputContainer.appendChild(etcInput);
@@ -140,7 +203,10 @@ function renderQuestion() {
           checkbox.disabled = true;
         }
 
-        checkbox.addEventListener('change', (event) => handleCheckboxChange(event.target.value, event.target.checked, currentQuestion.limit, currentQuestion.id));
+        checkbox.addEventListener('change', (event) => {
+          handleCheckboxChange(event.target.value, event.target.checked, currentQuestion.limit, currentQuestion.id);
+          updateRealtimeWeightsDisplay(); // Update on change
+        });
         
         label.appendChild(checkbox);
         label.appendChild(document.createTextNode(optionValue));
@@ -301,6 +367,7 @@ function handleNextButton() {
   if (currentQuestionIndex < questionsData.length - 1) {
     currentQuestionIndex++;
     renderQuestion();
+    updateRealtimeWeightsDisplay(); // Update weights on navigation
   } else {
     showResults();
   }
@@ -310,6 +377,7 @@ function handlePrevButton() {
   if (currentQuestionIndex > 0) {
     currentQuestionIndex--;
     renderQuestion();
+    updateRealtimeWeightsDisplay(); // Update weights on navigation
   }
 }
 
@@ -318,29 +386,28 @@ function calculateTotalWeights() {
 
   userAnswers.forEach((answer, index) => {
     const questionInQuestions = questionsData[index]; // Question from questions.js
+    
+    // Attempt to map question text from questionsData to weightsData
+    const mappedQuestionText = questionTextMap[questionInQuestions.question] || questionInQuestions.question;
+    const questionInWeights = weightsData.find(q => q.question === mappedQuestionText);
 
-    // Find the corresponding question in weightsData (surveyData.js) based on question text or id
-    const questionInWeights = weightsData.find(q => q.question === questionInQuestions.question);
+    if (!questionInWeights || !questionInWeights.options) {
+      // console.warn(`No matching weights data found for question: ${questionInQuestions.question}`);
+      return; // Skip if no matching weights question
+    }
 
-    if (questionInWeights && questionInQuestions.options) {
-      if (questionInQuestions.type === 'checkbox') {
-        const selectedValues = Array.isArray(answer) ? answer : [];
-        selectedValues.forEach(selectedValue => {
-          const optionInWeights = questionInWeights.options.find(opt => opt.text === selectedValue);
-          if (optionInWeights && optionInWeights.weights) {
-            for (const family in optionInWeights.weights) {
-              if (totalWeights.hasOwnProperty(family)) {
-                totalWeights[family] += optionInWeights.weights[family];
-              }
-            }
+    if (questionInQuestions.type === 'checkbox') {
+      const selectedValues = Array.isArray(answer) ? answer : [];
+      selectedValues.forEach(selectedValue => {
+        // Apply +3 bonus for 'scent_like' question
+        if (questionInQuestions.id === 'scent_like' && selectedValue !== '모름(없음)') {
+          if (totalWeights.hasOwnProperty(selectedValue)) {
+            totalWeights[selectedValue] += 3;
           }
-        });
-      } else if (answer && answer.optionIndex !== undefined && answer.optionIndex !== -1) {
-        // For 'button', 'visual-color', etc. where a single option button is selected
-        const selectedOptionInQuestions = questionInQuestions.options[answer.optionIndex];
-        const selectedOptionText = typeof selectedOptionInQuestions === 'object' && selectedOptionInQuestions.text ? selectedOptionInQuestions.text : selectedOptionInQuestions;
+        }
 
-        const optionInWeights = questionInWeights.options.find(opt => opt.text === selectedOptionText);
+        const normalizedSelectedValue = normalizeOptionText(selectedValue);
+        const optionInWeights = questionInWeights.options.find(opt => opt.text === normalizedSelectedValue);
         if (optionInWeights && optionInWeights.weights) {
           for (const family in optionInWeights.weights) {
             if (totalWeights.hasOwnProperty(family)) {
@@ -348,12 +415,27 @@ function calculateTotalWeights() {
             }
           }
         }
-      } else if (questionInQuestions.type === 'button-with-etc' && answer && answer.isEtc && answer.value && answer.value.trim() !== '') {
-        // If 'etc' input was used for 'button-with-etc' type, we need weights for 'etc'.
-        // For now, no specific weights are defined for 'etc' in weightsData.
-        // This would require a decision on how 'etc' input impacts weights.
-        // For this iteration, 'etc' input will not contribute to weights.
+      });
+    } else if (answer && answer.optionIndex !== undefined && answer.optionIndex !== -1) {
+      // For 'button', 'visual-color', etc. where a single option button is selected
+      const selectedOptionInQuestions = questionInQuestions.options[answer.optionIndex];
+      const selectedOptionText = typeof selectedOptionInQuestions === 'object' && selectedOptionInQuestions.text ? selectedOptionInQuestions.text : selectedOptionInQuestions;
+      
+      const normalizedSelectedOptionText = normalizeOptionText(selectedOptionText);
+      const optionInWeights = questionInWeights.options.find(opt => opt.text === normalizedSelectedOptionText);
+      
+      if (optionInWeights && optionInWeights.weights) {
+        for (const family in optionInWeights.weights) {
+          if (totalWeights.hasOwnProperty(family)) {
+            totalWeights[family] += optionInWeights.weights[family];
+          }
+        }
       }
+    } else if (questionInQuestions.type === 'button-with-etc' && answer && answer.isEtc && answer.value && answer.value.trim() !== '') {
+      // If 'etc' input was used for 'button-with-etc' type, we need weights for 'etc'.
+      // For now, no specific weights are defined for 'etc' in weightsData.
+      // This would require a decision on how 'etc' input impacts weights.
+      // For this iteration, 'etc' input will not contribute to weights.
     }
   });
 }
@@ -380,7 +462,7 @@ function showResults() {
 
   // Improved display for recommendation and weights
   let weightsDisplay = Object.entries(totalWeights)
-    .sort(([, weightA], [, weightB]) => weightB - weightA) // Sort by weight in descending order
+    .sort(([familyA], [familyB]) => perfumeFamilies.indexOf(familyA) - perfumeFamilies.indexOf(familyB)) // Sort by predefined order
     .map(([family, weight]) => `${family} ${weight}점`) // Format as "시트러스 n점"
     .join(', ');
 
@@ -408,6 +490,7 @@ document.addEventListener('DOMContentLoaded', () => {
   resultsContainer = document.getElementById('results-container');
   recommendationDisplay = document.getElementById('recommendation-display');
   restartButton = document.getElementById('restart-button');
+  currentWeightsDisplay = document.getElementById('current-weights'); // New: Get the real-time display element
 
   // Event Listeners
   nextButton.addEventListener('click', handleNextButton);
