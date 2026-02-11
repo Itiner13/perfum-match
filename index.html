@@ -3,12 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
+  <title>AI 향수 추천 큐레이션</title>
   <link href='/style.css' rel='stylesheet'>
 </head>
 <body>
   <div id="app">
-    <div id="survey-container">
+    <div id="landing-page-container">
+      <h1>AI 향수 추천 큐레이션</h1>
+      <button id="start-survey-button" class="action-button">바로가기</button>
+    </div>
+
+    <div id="survey-container" style="display: none;">
       <h1 id="question-text"></h1>
       <div id="options-container">
         <!-- Options will be dynamically loaded here -->
