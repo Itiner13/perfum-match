@@ -1,21 +1,21 @@
 import { surveyData } from './surveyData.js';
 
-const landingPageContainer = document.getElementById('landing-page-container');
-const startSurveyButton = document.getElementById('start-survey-button');
-const questionText = document.getElementById('question-text');
-const optionsContainer = document.getElementById('options-container');
-const prevButton = document.getElementById('prev-button');
-const nextButton = document.getElementById('next-button');
-const surveyContainer = document.getElementById('survey-container');
-const resultsContainer = document.getElementById('results-container');
-const recommendationDisplay = document.getElementById('recommendation-display');
-const restartButton = document.getElementById('restart-button');
-
 let currentQuestionIndex = 0;
 let userAnswers = []; // Stores the selected weights object (for select) or string (for text) for each question
 let totalWeights = {};
 
 const perfumeFamilies = ["시트러스", "그린", "플로럴", "우디", "머스크", "앰버", "워터리", "스파이시", "레더", "프루티"];
+
+let landingPageContainer;
+let startSurveyButton;
+let questionText;
+let optionsContainer;
+let prevButton;
+let nextButton;
+let surveyContainer;
+let resultsContainer;
+let recommendationDisplay;
+let restartButton;
 
 function initializeTotalWeights() {
   perfumeFamilies.forEach(family => {
@@ -24,6 +24,7 @@ function initializeTotalWeights() {
 }
 
 function initializeSurvey() {
+  console.log('initializeSurvey called'); // Debug log
   currentQuestionIndex = 0;
   userAnswers = new Array(surveyData.length).fill(null); // Initialize with null for each question
   initializeTotalWeights();
@@ -34,11 +35,13 @@ function initializeSurvey() {
 }
 
 function renderQuestion() {
+  console.log('renderQuestion called. Current index:', currentQuestionIndex); // Debug log
   const currentQuestion = surveyData[currentQuestionIndex];
   questionText.textContent = currentQuestion.question;
   optionsContainer.innerHTML = ''; // Clear previous options
 
   if (currentQuestion.type === 'text') {
+    console.log('Current Question Type: text'); // Debug log
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = currentQuestion.placeholder || '여기에 입력하세요';
@@ -50,6 +53,7 @@ function renderQuestion() {
     input.addEventListener('input', (event) => handleTextInput(event.target.value));
     optionsContainer.appendChild(input);
   } else { // type === 'select'
+    console.log('Current Question Type: select'); // Debug log
     currentQuestion.options.forEach((option, index) => {
       const button = document.createElement('button');
       button.classList.add('option-button');
@@ -64,6 +68,7 @@ function renderQuestion() {
     });
   }
 
+  console.log('Options container HTML after render:', optionsContainer.innerHTML); // Debug log
   updateNavigationButtons();
 }
 
@@ -104,7 +109,7 @@ function handleNextButton() {
   }
 
   if (!isAnswered) {
-    alert('답변을 선택하거나 입력해주세요!');
+    // alert('답변을 선택하거나 입력해주세요!'); // Removed as per user request
     return;
   }
 
@@ -159,19 +164,30 @@ function showResults() {
   resultsContainer.style.display = 'block';
 }
 
-// Event Listeners
-nextButton.addEventListener('click', handleNextButton);
-prevButton.addEventListener('click', handlePrevButton);
-restartButton.addEventListener('click', initializeSurvey);
-
-startSurveyButton.addEventListener('click', () => {
-  landingPageContainer.style.display = 'none';
-  initializeSurvey();
-});
-
-// Initialize the display when the DOM is fully loaded
+// Initialize the display and event listeners when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
+  landingPageContainer = document.getElementById('landing-page-container');
+  startSurveyButton = document.getElementById('start-survey-button');
+  questionText = document.getElementById('question-text');
+  optionsContainer = document.getElementById('options-container');
+  prevButton = document.getElementById('prev-button');
+  nextButton = document.getElementById('next-button');
+  surveyContainer = document.getElementById('survey-container');
+  resultsContainer = document.getElementById('results-container');
+  recommendationDisplay = document.getElementById('recommendation-display');
+  restartButton = document.getElementById('restart-button');
+
+  // Event Listeners
+  nextButton.addEventListener('click', handleNextButton);
+  prevButton.addEventListener('click', handlePrevButton);
+  restartButton.addEventListener('click', initializeSurvey);
+
+  startSurveyButton.addEventListener('click', () => {
+    console.log('startSurveyButton clicked'); // Debug log
+    landingPageContainer.style.display = 'none';
+    initializeSurvey();
+  });
+
   landingPageContainer.style.display = 'block';
-  surveyContainer.style.display = 'none';
   resultsContainer.style.display = 'none';
 });
